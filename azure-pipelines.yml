@@ -43,23 +43,7 @@ stages:
               mvn -B clean test
             displayName: 'Execute Rest Assured API Automation Tests'
 
-          # 4. Report Stage (Publish Test Results)
-          - task: PublishTestResults@2
-            condition: succeededOrFailed()
-            inputs:
-              testResultsFormat: 'JUnit'
-              testResultsFiles: '**/target/surefire-reports/*.xml'
-              mergeTestResults: true
-              failTaskOnFailedTests: true
-              testRunTitle: 'Rest Assured API Automation Tests'
-
-          # Publish Artifacts
-          - task: PublishBuildArtifacts@1
-            condition: always()
-            inputs:
-              pathToPublish: '$(System.DefaultWorkingDirectory)/target/surefire-reports'
-              artifactName: 'SurefireReports'
-              publishLocation: 'Container'
+        #--------------------
 
   # Post-execution notifications or actions
   - stage: PostExecution
