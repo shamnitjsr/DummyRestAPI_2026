@@ -57,7 +57,7 @@ stages:
           - task: PublishBuildArtifacts@1
             condition: always()
             inputs:
-              pathToPublish: 'target/surefire-reports'
+              pathToPublish: '$(System.DefaultWorkingDirectory)/target/surefire-reports'
               artifactName: 'SurefireReports'
               publishLocation: 'Container'
 
