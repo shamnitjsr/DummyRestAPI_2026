@@ -1,0 +1,73 @@
+trigger:
+  - main
+
+pool:
+  vmImage: 'windows-latest' # Equivalent to Windows agent environment
+
+variables:
+  REPO_URL: 'https://github.com/shamnitjsr/DummyRestAPI_2026.git'
+  BRANCH: 'main'
+
+stages:
+  - stage: BuildAndTest
+    jobs:
+      - job: MavenBuildAndTest
+        timeoutInMinutes: 30
+        steps:
+          # 1. Checkout (Azure Pipelines automatically checks out the repository, 
+          # but if you need to explicitly pull your specific REPO_URL, you can use git or checkout task)
+          - checkout: self
+            persistCredentials: true
+
+          # 2. Set up Java and Maven versions
+          - task: JavaToolInstaller@0
+            inputs:
+              versionSpec: '17' # Adjust to your Java version (e.g., '11', '17', '21')
+              jdkArchitectureOption: 'x64'
+              jdkSourceOption: 'PreInstalled'
+
+          - task: Maven@3
+            inputs:
+              mavenPomFile: 'pom.xml'
+              mavenOptions: '-Xmx3072m'
+              javaHomeOption: 'JDKVersion'
+              jdkVersionOption: 'default'
+              jdkArchitectureOption: 'x64'
+              publishJUnitResults: false # We'll use a dedicated task for better control
+              goals: 'clean compile'
+
+          # 3. Test Stage
+          - script: |
+              java -version
+              mvn -version
+              mvn -B clean test
+            displayName: 'Execute Rest Assured API Automation Tests'
+
+          # 4. Report Stage (Publish Test Results)
+          - task: PublishTestResults@2
+            condition: succeededOrFailed()
+            inputs:
+              testResultsFormat: 'JUnit'
+              testResultsFiles: '**/target/surefire-reports/*.xml'
+              mergeTestResults: true
+              failTaskOnFailedTests: true
+              testRunTitle: 'Rest Assured API Automation Tests'
+
+          # Publish Artifacts
+          - task: PublishBuildArtifacts@1
+            condition: always()
+            inputs:
+              pathToPublish: 'target/surefire-reports'
+              artifactName: 'SurefireReports'
+              publishLocation: 'Container'
+
+  # Post-execution notifications or actions
+  - stage: PostExecution
+    condition: always()
+    dependsOn: BuildAndTest
+    jobs:
+      - job: StatusNotification
+        steps:
+          - script: |
+              echo Pipeline status: $(Build.BuildStatus)
+            displayName: 'Pipeline Completion Status'
